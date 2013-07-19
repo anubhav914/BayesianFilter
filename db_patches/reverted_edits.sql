@@ -23,27 +23,27 @@ DROP TABLE IF EXISTS `reverted_edits`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `reverted_edits` (
-  `reversion_id` int(11) NOT NULL AUTO_INCREMENT,
-  `undid_rev_id` int(11) NOT NULL,
-  `curr_rev_id` int(11) NOT NULL,
-  `page_id` int(11) NOT NULL,
-  `title` text,
-  `undid_rev_text_id` int(11) NOT NULL,
-  `curr_rev_text_id` int(11) NOT NULL,
-  `rev_comment` text,
-  `undid_user_id` int(11) NOT NULL,
-  `undid_user` text,
-  `curr_user` text,
-  `curr_user_id` int(11) NOT NULL,
-  `reversion_user_id` int(11) NOT NULL,
-  `reversion_user` text,
-  `action` text,
-  `spam` char(1) DEFAULT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`reversion_id`),
-  KEY `reverted_edits_undid_rev_id` (`undid_rev_id`),
-  KEY `reverted_edits_curr_rev_id` (`curr_rev_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+  `re_reversion_id` int(11) NOT NULL AUTO_INCREMENT,
+  `re_undid_rev_id` int(11) NOT NULL,
+  `re_curr_rev_id` int(11) NOT NULL,
+  `re_page` int(11) NOT NULL,
+  `re_title` varbinary(255),
+  `re_undid_rev_text_id` int(11) NOT NULL,
+  `re_curr_rev_text_id` int(11) NOT NULL,
+  `re_comment` tinyblob,
+  `re_undid_user` int(11) NOT NULL,
+  `re_undid_user_text` text,
+  `re_curr_user` int(11) NOT NULL,
+  `re_curr_user_text` text,
+  `re_user` int(11) NOT NULL,
+  `re_user_text` text,
+  `re_action` varbinary(8),
+  `re_spam` varbinary(1) DEFAULT NULL,
+  `re_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`re_reversion_id`),
+  KEY `reverted_edits_undid_rev_id` (`re_undid_rev_id`),
+  KEY `reverted_edits_curr_rev_id` (`re_curr_rev_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --

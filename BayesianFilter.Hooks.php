@@ -27,6 +27,7 @@ class BayesianFilterHooks {
 
 		$filterObj->insertRevertedEdits( $row, $title, "", $user->getId(), $user->getName(), "rollback", "" ) ;
 
+		return true;
 	}
 
 	/**
@@ -50,17 +51,19 @@ class BayesianFilterHooks {
 			return ;
 
 		$title = $request->getVal('title');
-		$spam = 'N';
+		$spam = 0;
 		
 		$wpSpam = $request->getval('wpSpam');
 		if(isset($wpSpam))
-			$spam = 'Y';
+			$spam = 1;
 
 		$filterObj = new BayesianFilter();
 		
 		$row = $filterObj->getRevertedEditsInfo($undidRevision);
 		
 		$filterObj->insertRevertedEdits( $row, $title, $summary, $user->getId(), $user->getName(), "undo", $spam ) ;
+
+		return true;
 		
 	}
 
@@ -80,6 +83,8 @@ class BayesianFilterHooks {
 
 		$view = new BayesianFilterPageView();
 		$view->addFlagSpamCheckbox( $checks, $tabindex );
+
+		return true;
 	}
 }
 
