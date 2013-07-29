@@ -17,21 +17,21 @@ class BayesianFilterHooks {
 	* @current is the article to which it is rollbacked 
 	*/
 
-	static function rollbackComplete(Page $page, User $user, $target, $current) {
+	static function rollbackComplete( Page $page, User $user, $target, $current ) {
 	
 		$title = $page->getTitle()->getDBkey();
 		$undidRevision = $target->mTextId;
 
-		$filterObj = new BayesianFilter();
-		$row = $filterObj->getRevertedEditsInfo($undidRevision);
+		$filterDbHandler = new BayesianFilterDBHandler();
+		$row = $filterDbHandler->getRevertedEditsInfo( $undidRevision );
 
-		$filterObj->insertRevertedEdits( $row, $title, "", $user->getId(), $user->getName(), "rollback", "" ) ;
+		$filterDbHandler->insertRevertedEdits( $row, $title, "", $user->getId(), $user->getName(), "rollback", "" ) ;
 
 		return true;
 	}
 
 	/**
-	* Hook function for EditFilterMergedContent
+	* Hook function for EditFilterMerged
 	*
 	* This is a postmerge hook, meaning it is run when article is saved. This functions saves
 	* the edits which were an undo operation in the database
@@ -42,28 +42,41 @@ class BayesianFilterHooks {
 	* @minoredit is true when the user checks the minoredit checkbox, otherwise false
 	*/
 	
-	static function filterMergedContent(RequestContext $context, Content $content, Status $status,
-	$summary, User $user,  $minoredit) {
+	
+	static function filterMerged( EditPage $editPage, $content, &$hookErr, $summary ) {
 
+		$context = $editPage->mArticle->getContext();
 		$request = $context->getRequest();
-		$undidRevision = $request->getVal('wpUndidRevision'); //to check if the edit was an undo operation.
-		if(!isset($undidRevision))
-			return ;
+		$title = $request->getVal( 'title' );
 
-		$title = $request->getVal('title');
-		$spam = 0;
-		
-		$wpSpam = $request->getval('wpSpam');
-		if(isset($wpSpam))
-			$spam = 1;
+		global $wgUser;
 
-		$filterObj = new BayesianFilter();
-		
-		$row = $filterObj->getRevertedEditsInfo($undidRevision);
-		
-		$filterObj->insertRevertedEdits( $row, $title, $summary, $user->getId(), $user->getName(), "undo", $spam ) ;
+		$undidRevision = $request->getVal( 'wpUndidRevision' );
+		if( isset( $undidRevision ) && !empty( $undidRevision ) )
+		{
+			//the edit was an undo operation, so we store it in reverted_edits.
+			//By default we have assumed it not to be spam, because it was undid to 
+			//a previous non-spam edit.
 
-		return true;
+			$spam = 0;
+			$wpSpam = $request->getval( 'wpSpam' );
+
+			if( isset( $wpSpam ) )
+				$spam = 1;
+
+			$filterDbHandler = new BayesianFilterDBHandler();
+			$row = $filterDbHandler->getRevertedEditsInfo( $undidRevision );
+			$filterDbHandler->insertRevertedEdits( $row, $title, $summary, $wgUser->getId(), $wgUser->getName(), "undo", $spam ) ;
+			return true;
+		}
+		
+		else
+		{
+			$filterObj = new BayesianFilter();
+			//wfDebugLog('BayesianFilter', "content is " . var_export($content, true) );
+			//$result = $filterObj->checkSpam( $content );
+			return true;
+		}
 		
 	}
 

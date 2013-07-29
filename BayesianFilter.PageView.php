@@ -7,9 +7,9 @@ class BayesianFilterPageView extends ContextSource {
 	public function addFlagSpamCheckbox( array &$checkboxes, &$tabindex ){
 
 		$request = $this->getRequest();
-		$undo = $request->getVal('undo');
+		$undo = $request->getVal( 'undo' );
 
-		if(isset($undo))
+		if( isset( $undo ) )
 		{
 			$checkbox = Xml::check(
 				'wpSpam',

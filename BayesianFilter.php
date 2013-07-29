@@ -24,10 +24,12 @@ $wgExtensionMessagesFiles['BayesianFilter'] = $dir . 'BayesianFilter.i18n.php';
 $wgFilterSettings = array();
 
 $wgHooks['ArticleRollbackComplete'][] = 'BayesianFilterHooks::rollbackComplete';
-$wgHooks['EditFilterMergedContent'][] = 'BayesianFilterHooks::filterMergedContent';
+$wgHooks['EditFilterMerged'][] = 'BayesianFilterHooks::filterMerged';
 $wgHooks['EditPageBeforeEditChecks'][] = 'BayesianFilterHooks::addFlagSpamCheckbox';
 
 
 $wgAutoloadClasses['BayesianFilterHooks'] = $dir . 'BayesianFilter.Hooks.php';
 $wgAutoloadClasses['BayesianFilterPageView'] = $dir . 'BayesianFilter.PageView.php';
-$wgAutoloadClasses['BayesianFilter'] = $dir . 'BayesianFilter.body.php';
+$wgAutoloadClasses['BayesianFilterDBHandler'] = $dir . 'BayesianFilter.DBHandler.php';
+$wgAutoloadClasses['BayesianFilter'] = $dir . 'BayesianFilter.Body.php';
+$wgAutoloadClasses['PorterStemmer'] = $dir . 'Stemmer.php';

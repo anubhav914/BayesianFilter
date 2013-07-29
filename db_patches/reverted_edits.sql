@@ -22,7 +22,7 @@
 DROP TABLE IF EXISTS `reverted_edits`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `reverted_edits` (
+CREATE TABLE  /*_*/`reverted_edits` (
   `re_reversion_id` int(11) NOT NULL AUTO_INCREMENT,
   `re_undid_rev_id` int(11) NOT NULL,
   `re_curr_rev_id` int(11) NOT NULL,
@@ -38,14 +38,14 @@ CREATE TABLE `reverted_edits` (
   `re_user` int(11) NOT NULL,
   `re_user_text` text,
   `re_action` varbinary(8),
-  `re_spam` varbinary(1) DEFAULT NULL,
+  `re_spam` bool DEFAULT NULL,
   `re_timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`re_reversion_id`),
-  KEY `reverted_edits_undid_rev_id` (`re_undid_rev_id`),
-  KEY `reverted_edits_curr_rev_id` (`re_curr_rev_id`)
+  PRIMARY KEY (`re_reversion_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+CREATE INDEX  /*i*/reverted_edits_undid_rev_id ON /*_*/reverted_edits(re_undid_rev_id);
+CREATE INDEX  /*i*/reverted_edits_curr_rev_id ON /*_*/reverted_edits(re_curr_rev_id);
 --
 -- Dumping data for table `reverted_edits`
 --
