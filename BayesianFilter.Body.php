@@ -19,7 +19,8 @@ class BayesianFilter {
 		$links = $this->getLinks( $text );
 		
 		$this->sanitize( $text );
-		$words = $this->tokenize( $text );
+		$delimiters = " \n\t\r,.";
+		$words = $this->tokenize( $text, $delimiters );
 		$this->removeStopWords( $words );
 		$this->stem( $words );
 
@@ -44,10 +45,61 @@ class BayesianFilter {
 			
 		}
 		
+		global $wgThreshold;
 		$spamHamCount = $filterDbHandler->getSpamHamCount();
 		$probSpam = $spamHamCount['spam'] / ( $spamHamCount['spam'] + $spamHamCount]['ham'] );
+		if( $probSpam > $wgThreshold )
+			return true;
+		else
+			return fasle;
 
+	}
 
+	public function sanitize( &$text)
+	{
+		//do nothing yet
+	}
+
+	public function tokenize( $text, $delimiters )
+	{
+		$words = array();
+		$tok = strtok( $text, $delimiters );
+		while( $tok !== false )
+		{
+			$words[] = $tok;
+			$tok = strtok( $delimiters );
+		}
+		return $words;
+	}
+
+	public function removeStopWords( &$words )
+	{
+
+		$handle = fopen("StopWords.txt", "r");
+		$stopWords = array();
+		if( $handle )
+		{
+			while( ( $buffer = fgets( $handle ) ) != false )
+			{
+				$stopWords[] = trim( $buffer );
+			}		
+		}
+
+		//optimizing the code,
+		$optimizedStopWordsArray = array();
+		foreach( $stopWords  as $stopWord )
+		{
+			$optimizedStopWordsArray[$stopWord] = 1;
+		}
+
+		foreach( $words as $key => $word )
+		{
+			if( array_key_exists( $word, $optimizedStopWordsArray ) )
+			{
+				//unset doesn't changes the indexes
+				unset($words[$key]);
+			}
+		}
 	}
 
 }

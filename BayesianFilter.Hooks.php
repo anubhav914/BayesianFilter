@@ -73,8 +73,12 @@ class BayesianFilterHooks {
 		else
 		{
 			$filterObj = new BayesianFilter();
-			//wfDebugLog('BayesianFilter', "content is " . var_export($content, true) );
-			//$result = $filterObj->checkSpam( $content );
+			// $result = $filterObj->checkSpam( $content );
+			// if ( $result !== false ) {
+			// 	$editPage->spamPageWithContent( $result );
+			// }
+			// // Return convention for hooks is the inverse of $wgFilterCallback
+			// return ( $result === false );
 			return true;
 		}
 		

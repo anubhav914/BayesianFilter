@@ -22,6 +22,7 @@ $wgExtensionMessagesFiles['BayesianFilter'] = $dir . 'BayesianFilter.i18n.php';
  * Array of settings for filter classes
  */
 $wgFilterSettings = array();
+$wgThreshold = 0.5;
 
 $wgHooks['ArticleRollbackComplete'][] = 'BayesianFilterHooks::rollbackComplete';
 $wgHooks['EditFilterMerged'][] = 'BayesianFilterHooks::filterMerged';
