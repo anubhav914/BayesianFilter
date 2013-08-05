@@ -102,4 +102,12 @@ class BayesianFilter {
 		}
 	}
 
+	public function stem( &$words )
+	{
+		foreach ( $words as $key => $word ) {
+
+			$words[$key] = PorterStemmer::Stem( $word );
+		}
+	}
+
 }
