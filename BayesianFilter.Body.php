@@ -1,8 +1,14 @@
 <?php
 
-if ( !defined( 'MEDIAWIKI' ) ) {     exit; }
-
 class BayesianFilter {
+
+	public function __construct()
+	{
+		if( !class_exists( 'BayesianFilterTokenizer' ) )
+			require_once( __DIR__ . '/BayesianFilter.Tokenizer.php' );
+		if( !class_exists( 'BayesianFilterDBHandler' ) )
+			require_once( __DIR__ . '/BayesianFilter.DBHandler.php' );
+	}
 
 	public function getLinks( $text )
 	{
@@ -18,96 +24,81 @@ class BayesianFilter {
 	{
 		$links = $this->getLinks( $text );
 		
-		$this->sanitize( $text );
-		$delimiters = " \n\t\r,.";
-		$words = $this->tokenize( $text, $delimiters );
-		$this->removeStopWords( $words );
-		$this->stem( $words );
+		$tokenizer = new BayesianFilterTokenizer;
+		$text = $tokenizer->sanitize( $text );
 
-		$filterDbHandler = new BayesianFilterDBHandler();
+		$words = array();
+
+		$token = $tokenizer->tokenize( $text );
+		while( $token )
+		{
+			if( !$tokenizer->isStopWord( $token ) )
+				$words[] = $tokenizer->stem( $token );
+			$token = $tokenizer->tokenize();
+		}
+
+		$filterDbHandler = new BayesianFilterDBHandler;
+		global $wgChunksize;
+		$wordsFrequency = $filterDbHandler->getFrequency( $words , $wgChunksize );
 		
-		//wordArray has keys as words and spam frequency as $word['word']['spam']
-		$wordArray =  $filterDbHandler->getWordsWithFrequency();   //this function returns all the words and their frequency in spam and ham edits
 		$probMsgGivenSpam = 1.0;
 		$probMsgGivenHam = 1.0;
+		$spamCount =  $hamCount = 0;
+
+		foreach( $wordsFrequency as $word => $frequency )
+		{
+			$spamCount += $frequency['spam'];
+			$hamCount += $frequency['ham'];
+		}
+
+		$wordCount = count( $words );
 
 		foreach ($words as $word ) 
 		{
-
-			if( array_key_exists( $word, $wordArray ) )
+			if( isset($wordsFrequency[$word]) )
 			{
-				$probMsgGivenSpam = $probMsgGivenSpam * ( $wordArray[$word]['spam'] + 1);
-				$probMsgGivenSpam = $probMsgGivenSpam / $wordArray['allTheWords']['spam'];
-
-				$probMsgGivenHam = $probMsgGivenHam * ( $wordArray[$word]['ham'] + 1);
-				$probMsgGivenHam = $probMsgGivenHam / $wordArray['allTheWords']['ham'];
-			}	
+				$probMsgGivenSpam = $probMsgGivenSpam * ( $wordsFrequency[$word]['spam'] + 1);
+				$probMsgGivenHam = $probMsgGivenHam * ( $wordFrequency[$word]['spam'] + 1);
+			}
 			
+			$probMsgGivenSpam = $probMsgGivenSpam / ( $spamCount + $wordCount );
+			$probMsgGivenHam = $probMsgGivenHam / ( $hamCount + $wordCount );
 		}
 		
-		global $wgThreshold;
+		global $wgSpamThreshold;
 		$spamHamCount = $filterDbHandler->getSpamHamCount();
-		$probSpam = $spamHamCount['spam'] / ( $spamHamCount['spam'] + $spamHamCount]['ham'] );
-		if( $probSpam > $wgThreshold )
+		$spamProb = ( $spamHamCount['spam'] ) / ( $spamHamCount['spam'] + $spamHamCount['ham'] );
+		$hamProb = 1.0 - $spamProb;
+
+		$probMsgGivenSpam = $probMsgGivenSpam * $spamProb;
+		$probMsgGivenHam = $probMsgGivenHam * $hamProb;
+
+		if( $probMsgGivenSpam > $probMsgGivenHam )
 			return true;
 		else
-			return fasle;
-
+		{
+			$filterDbHandler->insertFrequencyTable( $words, "ham" );
+			return false;
+		}
 	}
 
-	public function sanitize( &$text)
+	public function train( $text, $category )
 	{
-		//do nothing yet
-	}
+		
+		$tokenizer = new BayesianFilterTokenizer;
+		$text = $tokenizer->sanitize( $text );
 
-	public function tokenize( $text, $delimiters )
-	{
+		$token = $tokenizer->tokenize( $text );
 		$words = array();
-		$tok = strtok( $text, $delimiters );
-		while( $tok !== false )
+
+		while( $token )
 		{
-			$words[] = $tok;
-			$tok = strtok( $delimiters );
+			if( !$tokenizer->isStopWord( $token ) )
+				$words[] = $tokenizer->stem( $token );
+			$token = $tokenizer->tokenize();
 		}
-		return $words;
+
+		$filterDbHandler = new BayesianFilterDBHandler;
+		$filterDbHandler->insertFrequencyTable( $words, $category );
 	}
-
-	public function removeStopWords( &$words )
-	{
-
-		$handle = fopen("StopWords.txt", "r");
-		$stopWords = array();
-		if( $handle )
-		{
-			while( ( $buffer = fgets( $handle ) ) != false )
-			{
-				$stopWords[] = trim( $buffer );
-			}		
-		}
-
-		//optimizing the code,
-		$optimizedStopWordsArray = array();
-		foreach( $stopWords  as $stopWord )
-		{
-			$optimizedStopWordsArray[$stopWord] = 1;
-		}
-
-		foreach( $words as $key => $word )
-		{
-			if( array_key_exists( $word, $optimizedStopWordsArray ) )
-			{
-				//unset doesn't changes the indexes
-				unset($words[$key]);
-			}
-		}
-	}
-
-	public function stem( &$words )
-	{
-		foreach ( $words as $key => $word ) {
-
-			$words[$key] = PorterStemmer::Stem( $word );
-		}
-	}
-
 }

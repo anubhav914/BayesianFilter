@@ -4,9 +4,16 @@
  */
 class BayesianFilterPageView extends ContextSource {
 
+	protected $context;
+
+	public function __construct( $context )
+	{
+		$this->context = $context;
+	}
+
 	public function addFlagSpamCheckbox( array &$checkboxes, &$tabindex ){
 
-		$request = $this->getRequest();
+		$request = $this->context->getRequest();
 		$undo = $request->getVal( 'undo' );
 
 		if( isset( $undo ) )

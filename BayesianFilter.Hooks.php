@@ -9,28 +9,6 @@ if ( !defined( 'MEDIAWIKI' ) ) {     exit; }
 class BayesianFilterHooks {
 
 	/**
-	* Hook function for RollbackComplete
-	*
-	* @page is the instance of type Editpage and contains the information about the page being edited
-	* @user is the instance of User and is the current user who is editing the page
-	* @target is the article which is currently being rollbacked
-	* @current is the article to which it is rollbacked 
-	*/
-
-	static function rollbackComplete( Page $page, User $user, $target, $current ) {
-	
-		$title = $page->getTitle()->getDBkey();
-		$undidRevision = $target->mTextId;
-
-		$filterDbHandler = new BayesianFilterDBHandler();
-		$row = $filterDbHandler->getRevertedEditsInfo( $undidRevision );
-
-		$filterDbHandler->insertRevertedEdits( $row, $title, "", $user->getId(), $user->getName(), "rollback", "" ) ;
-
-		return true;
-	}
-
-	/**
 	* Hook function for EditFilterMerged
 	*
 	* This is a postmerge hook, meaning it is run when article is saved. This functions saves
@@ -47,41 +25,34 @@ class BayesianFilterHooks {
 
 		$context = $editPage->mArticle->getContext();
 		$request = $context->getRequest();
-		$title = $request->getVal( 'title' );
+		$filter = new BayesianFilter;
+		$filterDbHandler = new BayesianFilterDBHandler;
 
-		global $wgUser;
-
+		// wfDebugLog('BayesianFilter', $content ); 
 		$undidRevision = $request->getVal( 'wpUndidRevision' );
+
 		if( isset( $undidRevision ) && !empty( $undidRevision ) )
 		{
-			//the edit was an undo operation, so we store it in reverted_edits.
-			//By default we have assumed it not to be spam, because it was undid to 
-			//a previous non-spam edit.
-
-			$spam = 0;
-			$wpSpam = $request->getval( 'wpSpam' );
-
-			if( isset( $wpSpam ) )
-				$spam = 1;
-
-			$filterDbHandler = new BayesianFilterDBHandler();
-			$row = $filterDbHandler->getRevertedEditsInfo( $undidRevision );
-			$filterDbHandler->insertRevertedEdits( $row, $title, $summary, $wgUser->getId(), $wgUser->getName(), "undo", $spam ) ;
-			return true;
+			$wpSpam = $request->getVal( 'wpSpam' );
+			if( isset( $wpSpam ) && !empty( $wpSpam ) )
+			{
+				$text = $filterDbHandler->getRevertedText( $undidRevision );
+				$filter->train( $text, "spam" );
+				$filterDbHandler->insertSpamText( $text ) ;
+			}
 		}
-		
 		else
 		{
-			$filterObj = new BayesianFilter();
-			// $result = $filterObj->checkSpam( $content );
-			// if ( $result !== false ) {
-			// 	$editPage->spamPageWithContent( $result );
-			// }
-			// // Return convention for hooks is the inverse of $wgFilterCallback
-			// return ( $result === false );
-			return true;
+			$result = $filter->checkSpam( $content );
+			if( $result )
+			{
+				$editPage->spamPageWithContent( $result );
+				return false;
+			}
+			else
+				$filterDbHandler->insertSpamText( $content, false );
 		}
-		
+		return true;
 	}
 
 
@@ -96,13 +67,12 @@ class BayesianFilterHooks {
 	*/
 
 
-	public static function addFlagSpamCheckbox( &$editpage, &$checks, &$tabindex ){
+	public static function addFlagSpamCheckbox( &$editPage, &$checks, &$tabindex ){
 
-		$view = new BayesianFilterPageView();
+		$context = $editPage->mArticle->getContext();
+		$view = new BayesianFilterPageView( $context );
 		$view->addFlagSpamCheckbox( $checks, $tabindex );
 
 		return true;
 	}
 }
-
-
